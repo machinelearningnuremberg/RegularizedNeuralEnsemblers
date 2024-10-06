@@ -1,4 +1,4 @@
-# Searching Optimal Ensembles
+# Neural Ensemblers
 
 <p align="center">
   <a href="https://github.com/releaunifreiburg/MetaLearningEnsembles">
@@ -15,7 +15,9 @@
   </a> -->
 </p>
 
-## Contributing
+*This repo is a work in progress. We will add soon more documentation and funcionalities*.
+
+## Installation
 
 ### 1. Optional: Install miniconda and create an environment
 
