@@ -1,0 +1,57 @@
+# Python
+__pycache__
+dist
+
+# Log files
+*.out
+*.err
+*.log
+*.json
+LOGS/
+
+# slurm scripts
+slurm_scripts/*
+SearchingOptimalEnsembles_experiments/cluster_scripts/slurm/all_experiments.txt
+checkpoints/
+SearchingOptimalEnsembles_experiments/plots/saved_results/*
+SearchingOptimalEnsembles_experiments/cluster_scripts/slurm_pineda/bash_args/*
+SearchingOptimalEnsembles_experiments/reports/*
+AutogluonModels/*
+
+# Documentation
+site/*
+
+# IDE related
+.vscode/
+.idea/
+
+# Poetry
+poetry.lock
+
+# Misc
+*.sh
+*.model
+*.pth
+*.png
+*.txt
+
+# Results
+results
+
+# Jupyter
+.ipynb_checkpoints/
+
+# MacOS
+*.DS_Store
+
+# WandB
+SearchingOptimalEnsembles_experiments/wandb/
+**/wandb/
+
+# Plots
+SearchingOptimalEnsembles_experiments/plots/saved_plots/
+SearchingOptimalEnsembles_experiments/cluster_scripts/slurm_pineda/bash_args/
+SearchingOptimalEnsembles_experiments/cluster_scripts/slurm_pineda/old_bash_args/
+SearchingOptimalEnsembles/metadatasets/tabrepo/tabrepo
+SearchingOptimalEnsembles/metadatasets/scikit_learn/pipeline_bench
+SearchingOptimalEnsembles/posthoc/phem/phem
