@@ -1,13 +1,15 @@
+import os
 import copy
+from pathlib import Path
 
-import numpy as np
 import torch 
 import torch.nn as nn
+import numpy as np
 
-class NeuralEnsembler(nn.Module):  # Sample as Sequence
+class NeuralEnsembler(nn.Module):
     def __init__(
         self,
-        num_base_functions=1,
+        num_base_functions,
         hidden_dim=32,
         output_dim=1,
         num_layers=3,
@@ -22,7 +24,6 @@ class NeuralEnsembler(nn.Module):  # Sample as Sequence
     ):
         super().__init__()
 
-        # input = [BATCH SIZE X NUMBER OF SAMPLES X NUMBER OF BASE FUNCTIONS X NUMBER OF CLASSES]
         self.num_base_functions = num_base_functions
         self.num_layers = num_layers
         self.hidden_dim = hidden_dim
@@ -35,8 +36,7 @@ class NeuralEnsembler(nn.Module):  # Sample as Sequence
         self.output_dim = output_dim
         self.dropout_rate = dropout_rate
 
-        if self.mode == "model_averaging":
-            num_layers=-1
+        assert self.num_layers > 0
 
         if self.mode == "stacking":
             self.output_dim = 1
@@ -61,36 +61,23 @@ class NeuralEnsembler(nn.Module):  # Sample as Sequence
             self.second_module = nn.Sequential(nn.Linear(self.hidden_dim, self.hidden_dim),nn.ReLU())
 
 
-    def get_batched_weights(self, x):
-
+    def _get_mask_and_scaling_factor(self, x):
+        scaling_factor = 1
+        mask = None
+        device = x.device
         num_samples, num_classes, num_base_functions = x.shape
-
-        # [NUMBER OF CLASSES X NUMBER OF SAMPLES X NUMBER OF BASE FUNCTIONS]
-        x = self.first_module(x)
-
-        return x
-
-
-    def get_mask_and_scaling_factor(self, num_base_functions, device):
-        mask= (torch.rand(size=(num_base_functions,)) > self.dropout_rate).float().to(device)
-        scaling_factor = 1./(1.- self.dropout_rate)
-        return mask, scaling_factor
-
-    def forward(
-        self, x
-    ):
-        # X = [NUMBER OF SAMPLES  X NUMBER OF CLASSES X NUMBER OF BASE FUNCTIONS]
-        num_samples, num_classes, num_base_functions = x.shape
-        base_functions = copy.deepcopy(x)
-
         if self.training and self.dropout_rate > 0:
-            mask, scaling_factor = self.get_mask_and_scaling_factor(num_base_functions, x.device)
+            mask= (torch.rand(size=(num_base_functions,)) > self.dropout_rate).float().to(device)
+            scaling_factor = 1./(1.- self.dropout_rate)
             for i, dim in enumerate([ num_samples, num_classes]):
                 mask = torch.repeat_interleave(
                     mask.unsqueeze(i), dim, dim=i
-                )
-        else:
-            mask = None
+                )        
+        return mask, scaling_factor
+
+    def _batched_forward_across_classes(self, x, base_functions):
+        num_samples, num_classes, num_base_functions = x.shape
+        mask, scaling_factor = self._get_mask_and_scaling_factor(x)
 
         w = []
         idx = np.arange(num_classes)
@@ -101,38 +88,103 @@ class NeuralEnsembler(nn.Module):  # Sample as Sequence
                 base_functions[:,range_idx] = base_functions[:,range_idx]*mask[:,range_idx]
             else:
                 temp_x = x[:,range_idx]
-
-            temp_w = self.get_batched_weights(x = temp_x)
+            temp_w = self.first_module(temp_x)
             w.append(temp_w)
-
         w = torch.cat(w, axis=1)
+        return w, mask
+    
+    def forward(
+        self, x
+    ):
+        num_samples, num_classes, num_base_functions = x.shape
+        base_functions = copy.deepcopy(x)
+        w, mask = self._batched_forward_across_classes(x, base_functions)
 
-        if self.mode == "model_averaging":
+        if self.mode == "stacking":
+            w = self.out_layer(w)
+            x = w.squeeze(-1)
+            if self.task_type == "classification":
+                x = torch.nn.functional.softmax(x, dim=-1)
+            w_norm = None
+
+        elif self.mode == "model_averaging":
             w = w.mean(axis=1)
             w = self.second_module(w)
             w = torch.repeat_interleave(
                 w.unsqueeze(1), num_classes, dim=1
             )
+            w = self.out_layer(w)
 
-        w = self.out_layer(w)
-
-        if self.mode == "stacking":
-            x = w.squeeze(-1)
-            if self.task_type == "classification":
-                x = torch.nn.functional.softmax(x, dim=-1)
-            return x, None
-
-        elif self.mode == "model_averaging":
             if (mask is not None) and (not self.omit_output_mask):
                 w = w.masked_fill(mask == 0, -1e9)
 
-            # num_samples, num_classes, num_base_functions = w.shape
             w_norm = torch.nn.functional.softmax(w, dim=-1)
             x = torch.multiply(base_functions, w_norm).sum(axis=-1)
 
         else:
             raise ValueError(f"Unknown mode: {self.mode}")
         
-            # x.shape: [BATCH_SIZE, NUM_SAMPLES, NUM_CLASSES]
-            # w_norm.shape : [BATCH SIZE X NUMBER OF SAMPLES  X NUMBER OF CLASSES X NUMBER OF BASE FUNCTIONS]
+        # x.shape: [num_samples, num_classes]
+        # w_norm.shape : [num_samples, num_classes, num_base_functions]
         return x, w_norm
+    
+    def _get_config(self):
+        """
+        Get the configuration of the model.
+        Returns:
+            config (dict): Configuration dictionary.
+        """
+
+        config = {
+            "num_base_functions": self.num_base_functions,
+            "hidden_dim": self.hidden_dim,
+            "output_dim": self.output_dim,
+            "num_layers": self.num_layers,
+            "dropout_rate": self.dropout_rate,
+            "num_heads": self.num_heads,
+            "inner_batch_size": self.inner_batch_size,
+            "omit_output_mask": self.omit_output_mask,
+            "task_type": self.task_type,
+            "mode": self.mode,
+        }
+        return config
+    
+    def save_checkpoint(self, checkpoint_name: str = "neural_ensembler.pt"):
+        """ 
+        Save the model checkpoint to the specified file.
+        Args:
+            checkpoint_name (str): The name of the checkpoint file.
+        """ 
+
+        complete_path = Path(os.path.abspath(__file__)).parent.parent / "checkpoints"
+        complete_path.mkdir(parents=True, exist_ok=True)
+        config = self._get_config()
+        torch.save({
+                    'config': config,
+                    'model_state_dict': self.state_dict(),
+                    }, complete_path / checkpoint_name)
+
+    @staticmethod
+    def load_checkpoint(cls, checkpoint_name: str = "neural_ensembler.pt"):
+
+        """
+        Load a checkpoint from the specified file.
+        Args:
+            cls: The class of the model to load.
+            checkpoint_name (str): The name of the checkpoint file.
+        Returns:
+            model: The loaded model.
+        """
+
+        try:
+            complete_path = Path(os.path.abspath(__file__)).parent.parent / "checkpoints"
+            checkpoint = torch.load(complete_path / checkpoint_name)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Checkpoint {checkpoint_name} not found in {complete_path}")
+        
+        config = checkpoint.get("config", {})
+        model = cls(**config)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        model.eval()
+
+        return model
