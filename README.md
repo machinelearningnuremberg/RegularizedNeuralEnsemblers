@@ -1,6 +1,6 @@
 # Neural Ensemblers
 
-This repo is based on this [paper](https://arxiv.org/abs/2410.04520).
+This repo is based on this [paper](https://arxiv.org/abs/2410.04520), which creates neural networks for aggregating predictions of base models, i.e. neural networks as ensembling functions.
 
 # Quick Start
 
