@@ -2,8 +2,7 @@ import torch
 
 class TrainerArgs:
     """
-    Class to hold the
-    arguments for the trainer.
+    Class to hold the arguments for the trainer.
     """
     def __init__(self, batch_size : int = 32, 
                  epochs: int =10, 

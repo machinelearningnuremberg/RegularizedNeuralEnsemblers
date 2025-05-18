@@ -5,13 +5,22 @@ from .model import NeuralEnsembler
 from .trainer_args import TrainerArgs
 
 class Trainer:
+    """
+    Class to train the NeuralEnsembler model.
+    """
 
     def __init__(self, model: NeuralEnsembler, 
                  trainer_args: TrainerArgs = None,
     ):
+        """
+        Initialize the Trainer class.
+        Args:
+            model (NeuralEnsembler): The model to be trained.
+            trainer_args (TrainerArgs): The arguments for the trainer.
+        """
+
         self.model = model
         self.trainer_args = trainer_args if trainer_args is not None else TrainerArgs()
-        #fetch all the arguments from the trainer_args at once
         self.__dict__.update(self.trainer_args.__dict__)
 
     def fit(self, X: np.array, y: np.array) -> None:
@@ -34,7 +43,11 @@ class Trainer:
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip_value)
                 optimizer.step()
-            print(f"Epoch {epoch + 1}/{self.epochs}, Loss: {loss.item()}")  
+            print(f"Epoch {epoch + 1}/{self.epochs}, Loss: {loss.item()}") 
+        
+        if self.model.task_type == "regression":
+            self.model.set_y_scale(self.y_scale)
+
         self.model.save_checkpoint(self.checkpoint_name)
 
     def _get_loader(self, X, y):
@@ -50,12 +63,12 @@ class Trainer:
         X = torch.tensor(X, dtype=torch.float32).to(self.device)
         y = torch.tensor(y, dtype=torch.float32).to(self.device)
 
-        if self.task_type == "regression":
-            self.y_scale = X.mean()
-            y /= self.y_scale
-            X /= self.y_scale
+        if self.model.task_type == "regression":
+            self.y_scale = torch.abs(X).mean()
+            y /= self.y_scale.item()
+            X /= self.y_scale.item()
 
-        elif self.task_type == "classification":
+        elif self.model.task_type == "classification":
             y = torch.tensor(y, dtype=torch.long)
         dataset = torch.utils.data.TensorDataset(X, y)	
         loader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
@@ -72,26 +85,25 @@ class Trainer:
             loss (torch.Tensor): Computed loss.
         """
 
-        if self.task_type == "regression":
+        if self.model.task_type == "regression":
             loss = torch.nn.MSELoss()(output.reshape(-1), target.reshape(-1))
-        elif self.task_type == "classification":
+        elif self.model.task_type == "classification":
             logits = self._get_logits_from_probabilities(output)
             loss = torch.nn.CrossEntropyLoss()(logits, target.reshape(-1))
         else:
-            raise ValueError(f"Unknown task type: {self.task_type}")
+            raise ValueError(f"Unknown task type: {self.model.task_type}")
         return loss
 
     def _get_logits_from_probabilities(self, probabilities: torch.Tensor) -> torch.Tensor:
         """
         Get the logits given the probabilities.
-
         Args:
             probabilities (torch.Tensor): probability Tensor of shape (num_ensembles, num_pipelines, num_samples, num_classes).
-
         Returns:
             logits (torch.Tensor): probability Tensor of shape (num_ensembles, num_pipelines, num_samples, num_classes)
 
         """
+
         log_p = torch.log(probabilities + 10e-8)
         C = -log_p.mean(-1)
         logits = log_p + C.unsqueeze(-1)

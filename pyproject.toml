@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "neural-ensemblers"
+version = "0.0.1"
+authors = [
+  { name="Sebastian Pineda", email="sebastianpinedaarango@gmail.com" }
+]
+description = "Neural Ensemblers"
+readme = "README.md"
+requires-python = "==3.10.16"
+dependencies=[
+	"transformers==4.41.0",
+	"torch==2.5.1",
+    "pandas==2.2.3",
+    "numpy==1.26.4"
+    "scikit-learn==1.6.1",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+]
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["neural_ensemblers"]
+
+[project.urls]
+"Homepage" = "https://github.com/machinelearningnuremberg/NeuralEnsemblers"
+"Bug Tracker" = "https://github.com/machinelearningnuremberg/NeuralEnsemblers/issues"
