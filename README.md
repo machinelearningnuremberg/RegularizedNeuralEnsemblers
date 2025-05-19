@@ -2,8 +2,9 @@
 
 This repo is based on this [paper](https://arxiv.org/abs/2410.04520), which creates neural networks for aggregating predictions of base models, i.e. neural networks as ensembling functions.
 
-![alt text](images/architecture.png)
-
+<p align="center" width="50%">
+    <img width="33%" src="images/architecture.png"> 
+</p>
 
 # Quick Start
 
