@@ -8,9 +8,9 @@ from sklearn.datasets import load_diabetes
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 
-from neural_ensemblers.model import NeuralEnsembler
-from neural_ensemblers.trainer import Trainer
-from neural_ensemblers.trainer_args import TrainerArgs
+from regularized_neural_ensemblers.model import NeuralEnsembler
+from regularized_neural_ensemblers.trainer import Trainer
+from regularized_neural_ensemblers.trainer_args import TrainerArgs
 
 
 def get_base_functions():

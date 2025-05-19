@@ -6,9 +6,9 @@ from sklearn.metrics import accuracy_score
 from sklearn.utils import all_estimators
 from sklearn.datasets import load_breast_cancer
 
-from neural_ensemblers.model import NeuralEnsembler
-from neural_ensemblers.trainer import Trainer
-from neural_ensemblers.trainer_args import TrainerArgs
+from regularized_neural_ensemblers.model import NeuralEnsembler
+from regularized_neural_ensemblers.trainer import Trainer
+from regularized_neural_ensemblers.trainer_args import TrainerArgs
 
 
 def get_base_functions():
