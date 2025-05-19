@@ -1,4 +1,4 @@
-# Neural Ensemblers
+# Regularized Neural Ensemblers
 
 This repo is based on this [paper](https://arxiv.org/abs/2410.04520), which creates neural networks for aggregating predictions of base models, i.e. neural networks as ensembling functions.
 
@@ -8,9 +8,9 @@ Install locally:
 
 
 ```bash
-conda create -n neural_ensemblers python=3.9
-conda activate neural_ensemblers
-git clone https://github.com/machinelearningnuremberg/NeuralEnsemblers.git
+conda create -n regularized_neural_ensemblers python=3.10
+conda activate regularized_neural_ensemblers
+git clone https://github.com/machinelearningnuremberg/RegularizedNeuralEnsemblers.git
 cd neural_ensemblers
 pip install -e .
 ```
