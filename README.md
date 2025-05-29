@@ -19,9 +19,41 @@ cd neural_ensemblers
 pip install -e .
 ```
 
-Import class and create object. You can follow the examples in the folder `examples/`. Here we show an example for a classification task, by using the base functions in the example `examples/example_sk_classification`. 
+# Inference example
+Below we demonstrate how to use the ensembler for inference, assuming that the ensembler has been trained.
 
 ```python
+import numpy as np
+import torch
+from neural_ensemblers.model import NeuralEnsembler
+
+# Input shape = [num_samples, num_classes, num_base_functions]
+input = torch.rand((5, 3, 2))
+print(input)
+num_samples,  num_classes, num_base_functions= input.shape
+model = NeuralEnsembler(num_base_functions=num_base_functions,
+                        num_classes=num_classes)
+
+x, w= model(input)
+
+print(x.shape)
+print(w.shape)  # Check the output values
+
+print("x", x)
+print("w", w)
+```
+# Advanced examples
+
+You can follow the examples in the folder `examples/`. Below we show how to train the ensembler on a classification task, by using the base functions in the example `examples/example_sk_classification`. 
+
+```python
+from regularized_neural_ensemblers.model import NeuralEnsembler
+from regularized_neural_ensemblers.trainer import Trainer
+from regularized_neural_ensemblers.trainer_args import TrainerArgs
+
+#shapes:
+# base_functions_val = base_functions_test = [num_samples, num_classes, num_base_functions]
+# y_val = y_test = [num_samples, num_classes]
 base_functions_val, base_functions_test, y_val, y_test = get_base_functions()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
