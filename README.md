@@ -82,3 +82,9 @@ y_pred_test = model.predict(base_functions_test)
 acc = accuracy_score(y_test, y_pred_test.argmax(axis=1))
 print("accuracy", acc)
 ```
+
+# Evaluation Experiments
+
+To access the code related to the experiments in the paper, please refer to [this repo](https://github.com/machinelearningnuremberg/RegularizedNeuralEnsemblersBenchmark).
+
+# Cite us
