@@ -22,6 +22,7 @@ class NeuralEnsembler(nn.Module):
         num_heads=1,
         inner_batch_size=10,
         omit_output_mask=False,
+        uniform_mask=True,
         task_type="classification",
         mode="model_averaging",
         num_classes=None,
@@ -39,6 +40,7 @@ class NeuralEnsembler(nn.Module):
             num_heads (int): Number of heads for the attention mechanism.
             inner_batch_size (int): Inner batch size for processing classes.
             omit_output_mask (bool): Whether to omit the output mask.
+            uniform_mask (bool): Whether to use a uniform mask across samples for dropout.
             task_type (str): Type of task ('classification' or 'regression').
             mode (str): Mode of operation ('model_averaging' or 'stacking').
             num_classes (int): Number of classes for classification tasks.
@@ -57,6 +59,7 @@ class NeuralEnsembler(nn.Module):
         self.num_classes = num_classes
         self.output_dim = output_dim
         self.dropout_rate = dropout_rate
+        self.uniform_mask = uniform_mask
         self.y_scale = 1
         self.device = device if device is not None else \
                         torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -99,12 +102,20 @@ class NeuralEnsembler(nn.Module):
         mask = None
         num_samples, num_classes, num_base_functions = x.shape
         if self.training and self.dropout_rate > 0:
-            mask= (torch.rand(size=(num_base_functions,)) > self.dropout_rate).float().to(x.device)
             scaling_factor = 1./(1.- self.dropout_rate)
-            for i, dim in enumerate([ num_samples, num_classes]):
+
+            if self.uniform_mask:
+                mask= (torch.rand(size=(num_base_functions,)) > self.dropout_rate).float().to(x.device)
+                for i, dim in enumerate([num_samples, num_classes]):
+                    mask = torch.repeat_interleave(
+                        mask.unsqueeze(i), dim, dim=i
+                    )  
+            else:
+                mask= (torch.rand(size=(num_samples, 1, num_base_functions,)) > self.dropout_rate).float().to(x.device)
                 mask = torch.repeat_interleave(
-                    mask.unsqueeze(i), dim, dim=i
-                )        
+                    mask, num_classes, dim=1
+                )
+
         return mask, scaling_factor
 
     def _batched_forward_across_classes(self, x: torch.Tensor, base_functions: torch.Tensor):
