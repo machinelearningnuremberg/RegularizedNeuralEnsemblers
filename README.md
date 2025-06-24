@@ -88,3 +88,15 @@ print("accuracy", acc)
 To access the code related to the experiments in the paper, please refer to [this repo](https://github.com/machinelearningnuremberg/RegularizedNeuralEnsemblersBenchmark).
 
 # Cite us
+If you find this repo useful, please cite us as follows:
+
+```
+@inproceedings{
+arango2025regularized,
+title={Regularized Neural Ensemblers},
+author={Sebastian Pineda Arango and Maciej Janowski and Lennart Purucker and Arber Zela and Frank Hutter and Josif Grabocka},
+booktitle={AutoML 2025 Methods Track},
+year={2025},
+url={https://openreview.net/forum?id=uB4olDCuU2}
+}
+```
